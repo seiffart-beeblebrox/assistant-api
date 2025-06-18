@@ -1,0 +1,11 @@
+
+services:
+  - type: web
+    name: assistant-api
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: python main.py
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
