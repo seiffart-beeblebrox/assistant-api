@@ -6,8 +6,8 @@ import os
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-ASSISTANT_ID = "asst_DEINEID"
-THREAD_ID = "thread_DEINEID"
+ASSISTANT_ID = "asst_abc123xyz456"
+THREAD_ID = "thread_789xyz123"
 
 @app.route("/log_conversation", methods=["POST"])
 def log_conversation():
