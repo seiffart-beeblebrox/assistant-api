@@ -29,7 +29,7 @@ SHEET_RANGE_WRITE = "2025!A1"
 def index():
     return jsonify({
         "message": "🟢 Assistant API ist live.",
-        "endpoints": ["/log_conversation", "/read_external_sheet"]
+        "endpoints": ["/log_conversation", "/read_external_sheet", "/read_all_sheets"]
     })
 
 # === POST: Loggt GPT-Zusammenfassung in Assistant + Sheet A ===
@@ -64,17 +64,37 @@ def log_conversation():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# === GET: Liest alle Daten aus Sheet B ===
+# === GET: Liest Daten aus einem definierten Tabellenblatt ===
 @app.route("/read_external_sheet", methods=["GET"])
 def read_external_sheet():
     try:
         result = sheet_service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID_READ,
-            range="A1:Z1000"  # liest 1000 Zeilen und bis Spalte Z – praktisch "alles"
+            range="A1:Z1000"
         ).execute()
 
         values = result.get("values", [])
         return jsonify({"status": "OK", "data": values}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# === GET: Liest alle Datenblätter mit Inhalten aus dem Sheet ===
+@app.route("/read_all_sheets", methods=["GET"])
+def read_all_sheets():
+    try:
+        metadata = sheet_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID_READ).execute()
+        sheet_titles = [sheet["properties"]["title"] for sheet in metadata["sheets"]]
+
+        all_data = {}
+        for title in sheet_titles:
+            result = sheet_service.spreadsheets().values().get(
+                spreadsheetId=SPREADSHEET_ID_READ,
+                range=f"{title}!A1:Z1000"
+            ).execute()
+            all_data[title] = result.get("values", [])
+
+        return jsonify({"status": "OK", "sheets": all_data}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
