@@ -9,7 +9,7 @@ app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 ASSISTANT_ID = "asst_GivBrU2QUfZquaLLWgDX4mko"
-THREAD_ID = "thread_9rjSRGJXSuN4r8hby8S6TapR"
+THREAD_ID = "thread_avg0ko6IsprGU3Aqd7KJYI55"
 
 # === Google Sheets Setup ===
 SERVICE_ACCOUNT_FILE = "/etc/secrets/google-credentials.json"
