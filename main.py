@@ -29,7 +29,7 @@ SHEET_RANGE_WRITE = "2025!A1"
 def index():
     return jsonify({
         "message": "🟢 Assistant API ist live.",
-        "endpoints": ["/log_conversation", "/read_external_sheet", "/read_all_sheets"]
+        "endpoints": ["/log_conversation", "/read_external_sheet", "/read_all_sheets", "/query_sheet"]
     })
 
 # === POST: Loggt GPT-Zusammenfassung in Assistant + Sheet A ===
@@ -43,14 +43,12 @@ def log_conversation():
         return jsonify({"error": "summary fehlt"}), 400
 
     try:
-        # In GPT-Thread posten
         openai.beta.threads.messages.create(
             thread_id=THREAD_ID,
             role="user",
-            content=f"📌 Thema: {topic}\n\n🗒️ Zusammenfassung:\n{summary}"
+            content=f"📌 Thema: {topic}\n\n📒 Zusammenfassung:\n{summary}"
         )
 
-        # In Sheet A schreiben
         values = [[topic, summary]]
         sheet_service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID_WRITE,
@@ -95,6 +93,46 @@ def read_all_sheets():
             all_data[title] = result.get("values", [])
 
         return jsonify({"status": "OK", "sheets": all_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# === POST: GPT-Query mit Sheets-Daten füttern ===
+@app.route("/query_sheet", methods=["POST"])
+def query_sheet():
+    try:
+        metadata = sheet_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID_READ).execute()
+        sheet_titles = [sheet["properties"]["title"] for sheet in metadata["sheets"]]
+
+        all_data = {}
+        for title in sheet_titles:
+            result = sheet_service.spreadsheets().values().get(
+                spreadsheetId=SPREADSHEET_ID_READ,
+                range=f"{title}!A1:Z1000"
+            ).execute()
+            all_data[title] = result.get("values", [])
+
+        # Sheets-Daten als Text zusammenstellen
+        full_text = ""
+        for title, rows in all_data.items():
+            full_text += f"\n\nTabellenblatt: {title}\n"
+            for row in rows:
+                full_text += ", ".join(row) + "\n"
+
+        # Prompt für GPT
+        query = request.get_json().get("query", "")
+        if not query:
+            return jsonify({"error": "query fehlt"}), 400
+
+        completion = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Du analysierst strukturiert Google-Sheets-Daten."},
+                {"role": "user", "content": f"Hier sind die Daten:\n{full_text}\n\nFrage: {query}"}
+            ]
+        )
+
+        return jsonify({"status": "OK", "response": completion.choices[0].message["content"]}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
