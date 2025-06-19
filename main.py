@@ -24,6 +24,14 @@ SPREADSHEET_ID_WRITE = "1w2YfLfTq1D67GaL7y29eNlVELVz4_gcW7aIRzhd51u8"
 SPREADSHEET_ID_READ = "1SAK36NbKQjMipJyZt4jarp4nT01DwIxxdpyxtyH2nDQ"
 SHEET_RANGE_WRITE = "2025!A1"
 
+# === GET: Status-Seite für "/" ===
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({
+        "message": "🟢 Assistant API ist live.",
+        "endpoints": ["/log_conversation", "/read_external_sheet"]
+    })
+
 # === POST: Loggt GPT-Zusammenfassung in Assistant + Sheet A ===
 @app.route("/log_conversation", methods=["POST"])
 def log_conversation():
